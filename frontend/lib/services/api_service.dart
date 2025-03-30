@@ -1,10 +1,14 @@
+import 'dart:io';
 import 'package:dio/dio.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:convert';
 import 'package:http/http.dart' as http;
+import 'package:http_parser/http_parser.dart';
+import 'package:mime/mime.dart';
 
 class ApiService {
   static const String baseUrl = "http://your-backend-url.com/api";
+
   static Future<Map<String, dynamic>> login(
     String email,
     String password,
@@ -16,18 +20,28 @@ class ApiService {
     return response.data;
   }
 
-static Future<void> uploadTugas(String siswaId, File file) async {
+  static Future<void> uploadTugas(String siswaId, File file) async {
     String? token = await _getToken();
     var uri = Uri.parse("$baseUrl/tugas/upload");
-    var request = http.MultipartRequest('POST', uri)
-      ..headers['Authorization'] = 'Bearer $token'
-      ..fields['siswa_id'] = siswaId
-      ..files.add(await http.MultipartFile.fromPath('file', file.path, contentType: MediaType.parse(lookupMimeType(file.path) ?? 'application/octet-stream')));
+    var request =
+        http.MultipartRequest('POST', uri)
+          ..headers['Authorization'] = 'Bearer $token'
+          ..fields['siswa_id'] = siswaId
+          ..files.add(
+            await http.MultipartFile.fromPath(
+              'file',
+              file.path,
+              contentType: MediaType.parse(
+                lookupMimeType(file.path) ?? 'application/octet-stream',
+              ),
+            ),
+          );
 
     var response = await request.send();
     if (response.statusCode != 200) {
       throw Exception("Gagal mengupload tugas");
     }
+  } // Tambahkan penutupan metode uploadTugas() di sini
 
   static Future<String?> _getToken() async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
@@ -61,6 +75,26 @@ static Future<void> uploadTugas(String siswaId, File file) async {
 
     if (response.statusCode != 201) {
       throw Exception("Gagal menambahkan tagihan");
+    }
+  }
+
+  static Future<void> absensi(String? qrCode) async {
+    if (qrCode == null || qrCode.isEmpty) {
+      throw Exception("QR Code tidak valid");
+    }
+
+    String? token = await _getToken();
+    final response = await http.post(
+      Uri.parse("$baseUrl/absensi"),
+      headers: {
+        "Authorization": "Bearer $token",
+        "Content-Type": "application/json",
+      },
+      body: jsonEncode({"qr_code": qrCode}),
+    );
+
+    if (response.statusCode != 200) {
+      throw Exception("Gagal melakukan absensi");
     }
   }
 }

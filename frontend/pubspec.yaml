@@ -38,6 +38,8 @@ dependencies:
   provider: ^6.1.4
   shared_preferences: ^2.5.3
   dio: ^5.8.0+1
+  mime: ^1.0.4
+  image_picker: ^1.0.7
 
 dev_dependencies:
   flutter_test:
